@@ -12,7 +12,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/bbalet/stopwords"
 	"github.com/k3a/html2text"
 	"github.com/kennygrant/sanitize"
 	"gopkg.in/jdkato/prose.v2"
@@ -73,7 +72,7 @@ func cleantext(tobecleaned string) string {
 	cleanedtext = strings.ToLower(cleanedtext)
 
 	// remove stop words
-	cleanedtext = stopwords.CleanString(cleanedtext, "en", true)
+	//	cleanedtext = stopwords.CleanString(cleanedtext, "en", true)
 	return cleanedtext
 }
 
@@ -206,7 +205,9 @@ func sentence_similarity(reference string, text string, autoweight bool) float64
 
 func read_references() []string {
 	var refsentences []string
-	csvfile, err := os.Open("reference_sentences.csv")
+	//csvfile, err := os.Open("reference_sentences.csv")
+
+	csvfile, err := os.Open("reference_sentencesPIAAC.csv")
 	if err != nil {
 		log.Fatalln("Couldn't open the csv file", err)
 	}

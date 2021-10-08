@@ -28,7 +28,8 @@ def sim(reference: str, text: str):
 #model = SentenceTransformer('nq-distilbert-base-v1')
 
 #great results / use this one best so far
-model = SentenceTransformer('msmarco-distilbert-base-v3') 
+#model = SentenceTransformer('msmarco-distilbert-base-v3') # used for initial paper
+model = SentenceTransformer('msmarco-distilbert-base-v4') 
 
 
 #model = SentenceTransformer('msmarco-distilroberta-base-v2')
