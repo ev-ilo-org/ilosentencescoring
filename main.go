@@ -257,7 +257,7 @@ func read_references(referencesentencecsv string) []string {
 
 func process_sentences(filename string, resultsfilename string, references []string, processmax int, mlserver string) {
 
-	// Three maps for each col / save re-computing
+	// Two maps for each col / save re-computing
 	col0map := make(map[string]float64)
 	col1map := make(map[string]float64)
 	//col2map := make(map[string]float64)
