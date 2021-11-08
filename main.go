@@ -4,6 +4,7 @@ import (
 	//"bufio"
 	"encoding/csv"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -33,8 +34,6 @@ type SentenceService struct {
 type SentenceServiceResponse struct {
 	Similarty float64 `json:"similarty"`
 }
-
-const NLP_SERVER = "http://localhost:8083/sim"
 
 type SpacyLemmatizerResult []struct {
 	Label string `json:"label"`
@@ -78,7 +77,6 @@ func cleantext(tobecleaned string) string {
 
 func SpacyLemmatizerSentence(rawword string) string {
 
-	// url := "http://tika.eastvillagescl.com:8083/lem"
 	url := "http://tika.eastvillagescl.com:8083/lem" // spacy server in Wales
 	var callpayload SpacyLemCall
 	var spacylem SpacyLemmatizerResult
@@ -86,7 +84,7 @@ func SpacyLemmatizerSentence(rawword string) string {
 	if len(rawword) == 0 {
 		return rawword
 	}
-	callpayload.Model = "en_core_web_md" // "en_core_web_lg"
+	callpayload.Model = "en_core_web_md" // Large model is available e.g. "en_core_web_lg"
 
 	callpayload.Text = rawword
 
@@ -110,12 +108,8 @@ func SpacyLemmatizerSentence(rawword string) string {
 	var lemmatext string
 	for _, Lemmatizedwords := range spacylem {
 		lemmatext = lemmatext + " " + Lemmatizedwords.Label
-		//return Lemmatizedwords.Label
-
 	}
-
 	return lemmatext
-
 }
 
 func process_pos(text string) string {
@@ -142,16 +136,48 @@ func process_pos(text string) string {
 	return newsentence
 }
 
-func sentence_similarity(reference string, text string, autoweight bool) float64 {
+func check_sentence_similarity_online(mlserver string) bool {
 
-	url := NLP_SERVER
+	url := mlserver
+
+	var callpayload SentenceService
+	callpayload.Reference = "Hello"
+	callpayload.Text = "World"
+
+	bodybytes, _ := json.Marshal(callpayload)
+	payload := strings.NewReader(string(bodybytes))
+
+	req, err := http.NewRequest("POST", url, payload)
+
+	if err != nil {
+		return false
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Cache-Control", "no-cache")
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return false
+	}
+
+	defer res.Body.Close()
+
+	return true
+
+}
+
+func sentence_similarity(mlserver, reference string, text string, autoweight bool) float64 {
+
+	url := mlserver
 
 	var callpayload SentenceService
 	var callresponse SentenceServiceResponse
 
+	// Leaving this code incase it's useful in the future
+	//++
 	//callpayload.Reference = SpacyLemmatizerSentence(strings.ToLower(cleantext(reference)))
 	//callpayload.Text = SpacyLemmatizerSentence(strings.ToLower(cleantext(text)))
-
+	//++
 	callpayload.Reference = strings.ToLower(cleantext(reference))
 	callpayload.Text = strings.ToLower(cleantext(text))
 
@@ -186,14 +212,6 @@ func sentence_similarity(reference string, text string, autoweight bool) float64
 	if err_unmarhsal != nil {
 		fmt.Printf("Error = %v\n", err_unmarhsal)
 	}
-	/*
-		//	fmt.Printf("Error = %v\n", err)
-
-			fmt.Printf("Sentiment %v %v %v\n",
-				callresponse.SentimentPolarity,
-				callresponse.SentimentSubjectivity,
-				callresponse.DetectedLanguage)
-	*/
 
 	if autoweight {
 		weight := setintersection_members(reference, text) + 1 // +1 ensure that score remains even if no match direct intersection
@@ -203,18 +221,17 @@ func sentence_similarity(reference string, text string, autoweight bool) float64
 	return callresponse.Similarty
 }
 
-func read_references() []string {
+func read_references(referencesentencecsv string) []string {
 	var refsentences []string
-	//csvfile, err := os.Open("reference_sentences.csv")
 
-	csvfile, err := os.Open("reference_sentencesPIAAC.csv")
+	csvfile, err := os.Open(referencesentencecsv)
 	if err != nil {
-		log.Fatalln("Couldn't open the csv file", err)
+		log.Fatalln("Couldn't open/fine the reference sentence file file ", referencesentencecsv, err)
 	}
 
 	// Parse the file
 	r := csv.NewReader(csvfile)
-	//r := csv.NewReader(bufio.NewReader(csvfile))
+
 	var count int
 	// Iterate through the records
 	for {
@@ -238,7 +255,7 @@ func read_references() []string {
 
 }
 
-func process_sentences(filename string, references []string) {
+func process_sentences(filename string, resultsfilename string, references []string, processmax int, mlserver string) {
 
 	// Three maps for each col / save re-computing
 	col0map := make(map[string]float64)
@@ -265,7 +282,6 @@ func process_sentences(filename string, references []string) {
 
 	// Parse the file
 	r := csv.NewReader(csvfile)
-	//r := csv.NewReader(bufio.NewReader(csvfile))
 	var count int
 	// Iterate through the records
 	for {
@@ -302,7 +318,7 @@ func process_sentences(filename string, references []string) {
 					result = cachedresult
 					fmt.Printf("Result cached = %v / %v\n", mapkey, result)
 				} else {
-					result = sentence_similarity(sent, col0_text, NO_AUTOWEIGHT)
+					result = sentence_similarity(mlserver, sent, col0_text, NO_AUTOWEIGHT)
 					col0map[mapkey] = result
 					fmt.Printf("adding cached = %v / %v\n", mapkey, result)
 				}
@@ -330,7 +346,7 @@ func process_sentences(filename string, references []string) {
 					result = cachedresult
 					fmt.Printf("Result cached = %v / %v\n", mapkey, result)
 				} else {
-					result = sentence_similarity(sent, col1_text, NO_AUTOWEIGHT)
+					result = sentence_similarity(mlserver, sent, col1_text, NO_AUTOWEIGHT)
 					col1map[mapkey] = result
 					fmt.Printf("adding cached = %v / %v\n", mapkey, result)
 				}
@@ -349,21 +365,22 @@ func process_sentences(filename string, references []string) {
 			resultrecord = append(resultrecord, col2_text)
 
 			for _, sent := range references {
-				result := sentence_similarity(sent, col2_text, NO_AUTOWEIGHT)
+				result := sentence_similarity(mlserver, sent, col2_text, NO_AUTOWEIGHT)
 				resultstr := fmt.Sprintf("%.7f", result)
 				fmt.Printf("%v Sent %s /  %v = %v\n", count, sent, col2_text, resultstr)
 				resultrecord = append(resultrecord, resultstr)
 			}
 			records = append(records, resultrecord)
 		}
-		/*
-			if count > 10 {
-				break
-			}*/
+
+		// If the user wished to process a limited number of items
+		if (count >= processmax) && (processmax != 0) {
+			break
+		}
 	}
 
 	// Write Result to CSV
-	f, err := os.Create("result.csv")
+	f, err := os.Create(resultsfilename)
 	defer f.Close()
 
 	if err != nil {
@@ -402,16 +419,44 @@ func setintersection_members(reference string, text string) (intersection_member
 }
 
 func main() {
-	// Open the file
+	// Expected Inputs
+	// ./ilo_simscore -input=inputfile.csv -output=results.csv -server=127.0.0.1 -max=2
+	var inputfile string
+	var resultsfile string
+	var referencefile string
+	var mlserver string
 
-	//fmt.Printf("Q = %v\n", process_pos(SpacyLemmatizerSentence("Monitor construction or the operations")))
-	//return
-	//process_sentences("input.csv", read_references())
-	//process_sentences("fullinput.csv", read_references())
-	process_sentences("DWA_cat.csv", read_references())
+	flag.StringVar(&inputfile, "input", "DWA_cat.csv", "CSV File")
+	flag.StringVar(&resultsfile, "output", "results.csv", "CSV File")
+	flag.StringVar(&referencefile, "ref", "reference_sentencesPIAAC.csv", "CSV File")
+	flag.StringVar(&mlserver, "server", "tika.eastvillagescl.com", "ML Server")
+	processmax := flag.Int("max", 0, "pass MAX to set a limit on items to process ")
+	flag.Parse()
+
+	mlserver = fmt.Sprintf("http://%v:8083", mlserver)
+
+	fmt.Printf("Source CSV             = %v\n", inputfile)
+	fmt.Printf("Results (Output) CSV   = %v\n", resultsfile)
+	fmt.Printf("References             = %v\n", referencefile)
+	if *processmax > 0 {
+		fmt.Printf("Limit items to process = %v\n", *processmax)
+	}
+
+	fmt.Printf("ML Server              = %v\n", mlserver)
+
+	// Check if ML server is running
+	fmt.Printf("Checking if ML Service online\n")
+	if check_sentence_similarity_online(mlserver) == false {
+		fmt.Printf("ML Server not available - %v\n", mlserver)
+		return
+	}
+
+	process_sentences(inputfile, resultsfile, read_references(referencefile), *processmax, mlserver)
 
 	return
 
+	// experiements
+	//fmt.Printf("Q = %v\n", process_pos(SpacyLemmatizerSentence("Monitor construction or the operations")))
 	fmt.Printf("Interactions Members = %v\n", setintersection_members("strange", "world. the world is full of stranger worlds"))
 	return
 
