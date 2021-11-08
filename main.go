@@ -169,6 +169,7 @@ func check_sentence_similarity_online(mlserver string) bool {
 func sentence_similarity(mlserver, reference string, text string, autoweight bool) float64 {
 
 	url := mlserver
+	//url := "http://localhost:8083/sim"
 
 	var callpayload SentenceService
 	var callresponse SentenceServiceResponse
@@ -433,7 +434,7 @@ func main() {
 	processmax := flag.Int("max", 0, "pass MAX to set a limit on items to process ")
 	flag.Parse()
 
-	mlserver = fmt.Sprintf("http://%v:8083", mlserver)
+	mlserver = fmt.Sprintf("http://%v:8083/sim", mlserver)
 
 	fmt.Printf("Source CSV             = %v\n", inputfile)
 	fmt.Printf("Results (Output) CSV   = %v\n", resultsfile)
