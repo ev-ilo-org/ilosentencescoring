@@ -79,7 +79,9 @@ arguments
  
 <input> file for processing [default **DWA_cat.csv** ]
  
+ 
 **Format is CSV file (example) **
+ 
 Element Name,IWA Title,DWA Title
 Getting Information,Study details of artistic productions.,Review art or design materials.
 Getting Information,Study details of artistic productions.,Study details of musical compositions.
