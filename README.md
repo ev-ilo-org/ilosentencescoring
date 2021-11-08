@@ -66,10 +66,13 @@ cd referenceinputs
 run
 **../ilo -ref reference_sentencesPIAAC.csv -input DWA_cat.csv -server 127.0.0.1 -max=2**
 
+
+
 arguments
 <ref> reference sentence inputfile .csv [ default **reference_sentencesPIAAC.csv** ]
 
 **Format is CSV file (example) **
+ 
 1,working cooperatively or collaboratively with co-workers
 2,sharing work-related information with co-workers
 3,"instructing, training or teaching people, individually or in groups"
