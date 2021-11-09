@@ -67,6 +67,16 @@ To check if using East Village Server
 	
  _replace **ilo** with the name you require_
 
+To Build a binary executable for another another platform that what you are using
+
+Linux 
+env GOOS=linux GOARCH=amd64 go build -o ilo_linux main.go
+
+Windows
+env GOOS=windows GOARCH=amd64 go build -o ilo_windows main.go
+
+MAC
+env GOOS=darwin GOARCH=amd64 go build -o ilo_mac main.go
 
 ## **Running the command line utility**
 
