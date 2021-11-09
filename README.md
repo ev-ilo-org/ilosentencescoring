@@ -73,7 +73,7 @@ Linux
 env GOOS=linux GOARCH=amd64 go build -o ilo_linux main.go
 
 Windows
-env GOOS=windows GOARCH=amd64 go build -o ilo_windows main.go
+env GOOS=windows GOARCH=amd64 go build -o ilo_windows.exe main.go
 
 MAC
 env GOOS=darwin GOARCH=amd64 go build -o ilo_mac main.go
