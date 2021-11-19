@@ -13,9 +13,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jdkato/prose/v2"
 	"github.com/k3a/html2text"
 	"github.com/kennygrant/sanitize"
-	"gopkg.in/jdkato/prose.v2"
 )
 
 const AUTOWEIGHT = true
